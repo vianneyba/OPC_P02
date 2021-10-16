@@ -14,8 +14,16 @@ def write_data_books_in_csv(data_dict, file_name= 'book'):
             'category', 'review_rating', 'image_url']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
+            writer.writerow({
+                'product_page_url': data_dict['product_page_url'],
+                'title': data_dict['title'],
+            })
     except IOError:
         print('I/O error')
+
+# récupération du titre du livre
+def extract_title(soup):
+    return soup.find('h1').text.strip()
 
 if __name__ == '__main__':
     url = "http://books.toscrape.com/catalogue/its-only-the-himalayas_981/index.html"
@@ -23,5 +31,6 @@ if __name__ == '__main__':
     soup = BeautifulSoup(page.content, "html.parser")
 
     data_dict = {}
-
+    data_dict['product_page_url'] = url
+    data_dict['title'] = extract_title(soup)
     write_data_books_in_csv(data_dict)
