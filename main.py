@@ -17,6 +17,7 @@ def write_data_books_in_csv(data_dict, file_name= 'book'):
             writer.writerow({
                 'product_page_url': data_dict['product_page_url'],
                 'title': data_dict['title'],
+                'product_description': data_dict['product_description'],
             })
     except IOError:
         print('I/O error')
@@ -24,6 +25,13 @@ def write_data_books_in_csv(data_dict, file_name= 'book'):
 # récupération du titre du livre
 def extract_title(soup):
     return soup.find('h1').text.strip()
+
+# Récupération de la description grâce aux Métadonnées
+def extract_product_description(soup):
+    product_description = soup.find('meta', {'name': 'description'})
+    product_description = product_description['content'].strip()
+
+    return product_description
 
 if __name__ == '__main__':
     url = "http://books.toscrape.com/catalogue/its-only-the-himalayas_981/index.html"
@@ -33,4 +41,5 @@ if __name__ == '__main__':
     data_dict = {}
     data_dict['product_page_url'] = url
     data_dict['title'] = extract_title(soup)
+    data_dict['product_description'] = extract_product_description(soup)
     write_data_books_in_csv(data_dict)
