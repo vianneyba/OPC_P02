@@ -5,37 +5,26 @@ import re
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
+
 def create_url(url_base, url_relative):
     return urljoin(url_base, url_relative)
-
-# créé le dossier csv_files et écrit dans un fichier csv les données du dictionnaire
-def write_data_books_in_csv(data_dict, file_name= 'book'):
-    try:
-        if not os.path.exists('csv_files'):
-            os.makedirs('csv_files')
-        with open('csv_files/{}.csv'.format(file_name), 'w', newline='') as csvfile:
-            fieldnames = ['product_page_url', 'universal_product_code', 'title', 'price_including_tax', 'price_excluding_tax', 'number_available', 'product_description',
-            'category', 'review_rating', 'image_url']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerow({
-                'product_page_url': data_dict['product_page_url'],
-                'title': data_dict['title'],
-                'product_description': data_dict['product_description'],
-                'universal_product_code': data_dict['universal_product_code'],
-                'price_including_tax': data_dict['price_including_tax'],
-                'price_excluding_tax': data_dict['price_excluding_tax'],
-                'number_available': data_dict['number_available'],
-                'category': data_dict['category'],
-                'review_rating': data_dict['review_rating'],
-                'image_url': data_dict['image_url']
-            })
-    except IOError:
-        print('I/O error')
 
 # récupération du titre du livre
 def extract_title(soup):
     return soup.find('h1').text.strip()
+
+# Récupération des livres d'une catégorie
+def extract_book_per_category(url):
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, "html.parser")
+    extract_title(soup)
+    result= {'title': extract_title(soup), 'books': []}
+    ol = soup.find('ol')
+    hthrees = ol.find_all('h3')
+    for hthree in hthrees:
+        result['books'].append(create_url(url, hthree.find('a')['href']))
+
+    return result
 
 # Récupération de la description grâce aux Métadonnées
 def extract_product_description(soup):
@@ -80,18 +69,50 @@ def extract_image_url(soup):
 
     return product_gallery.find('img')['src']
 
-if __name__ == '__main__':
-    url = "http://books.toscrape.com/catalogue/the-lucifer-effect-understanding-how-good-people-turn-evil_758/index.html"
+# Récupération des info du livre
+def create_info_book(url):
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
 
-    data_dict = {}
-    data_dict['product_page_url'] = url
-    data_dict['title'] = extract_title(soup)
-    data_dict['product_description'] = extract_product_description(soup)
-    data_dict.update(extract_upc_price_availability(soup))
-    data_dict['category'] = extract_category(soup)
-    data_dict['review_rating'] = extract_review_rating(soup)
-    data_dict['image_url'] = create_url(url, extract_image_url(soup))
+    result = {}
+    result['product_page_url'] = url
+    result['title'] = extract_title(soup)
+    result['product_description'] = extract_product_description(soup)
+    result.update(extract_upc_price_availability(soup))
+    result['category'] = extract_category(soup)
+    result['review_rating'] = extract_review_rating(soup)
+    result['image_url'] = create_url(url, extract_image_url(soup))
 
-    write_data_books_in_csv(data_dict)
+    return result
+
+# créé le dossier csv_files et écrit dans un fichier csv les données du dictionnaire
+def write_data_books_in_csv(data_list, file_name= 'book'):
+    try:
+        if not os.path.exists('csv_files'):
+            os.makedirs('csv_files')
+        with open('csv_files/{}.csv'.format(file_name), 'w', newline='') as csvfile:
+            fieldnames = ['product_page_url', 'universal_product_code', 'title', 'price_including_tax', 'price_excluding_tax', 'number_available', 'product_description',
+            'category', 'review_rating', 'image_url']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for url in data_list:
+                data_dict = create_info_book(url)
+                writer.writerow({
+                    'product_page_url': data_dict['product_page_url'],
+                    'title': data_dict['title'],
+                    'product_description': data_dict['product_description'],
+                    'universal_product_code': data_dict['universal_product_code'],
+                    'price_including_tax': data_dict['price_including_tax'],
+                    'price_excluding_tax': data_dict['price_excluding_tax'],
+                    'number_available': data_dict['number_available'],
+                    'category': data_dict['category'],
+                    'review_rating': data_dict['review_rating'],
+                    'image_url': data_dict['image_url']
+                })
+    except IOError:
+        print('I/O error')
+
+if __name__ == '__main__':
+    url = "http://books.toscrape.com/catalogue/category/books/psychology_26/index.html"
+    category = extract_book_per_category(url)
+    write_data_books_in_csv(category['books'], category['title'])
