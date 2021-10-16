@@ -13,16 +13,37 @@ def create_url(url_base, url_relative):
 def extract_title(soup):
     return soup.find('h1').text.strip()
 
-# Récupération des livres d'une catégorie
-def extract_book_per_category(url):
-    page = requests.get(url)
+# Ajoute les livres tant qu'il y a des pages dans la catégorie
+def while__category_page(dict_page):
+    page = requests.get(dict_page['url'])
     soup = BeautifulSoup(page.content, "html.parser")
-    extract_title(soup)
-    result= {'title': extract_title(soup), 'books': []}
+
+    dict_page['title'] = extract_title(soup)
     ol = soup.find('ol')
     hthrees = ol.find_all('h3')
     for hthree in hthrees:
-        result['books'].append(create_url(url, hthree.find('a')['href']))
+        dict_page['books'].append(create_url(url, hthree.find('a')['href']))
+
+    next = soup.find('ul', class_ = 'pager')
+    if next is not None:
+        next = next.find('li', class_ = 'next')
+
+    if not next:
+        dict_page['next'] = False
+    else:
+        dict_page['url']= create_url(dict_page['url'], next.find('a')['href'])
+
+# Récupération des livres d'une catégorie
+def extract_book_per_category(url):
+    result = {
+        'url': url,
+        'title': '',
+        'books': [],
+        'next': True
+        }
+    
+    while result['next']:
+        while__category_page(result)
 
     return result
 
@@ -113,6 +134,6 @@ def write_data_books_in_csv(data_list, file_name= 'book'):
         print('I/O error')
 
 if __name__ == '__main__':
-    url = "http://books.toscrape.com/catalogue/category/books/psychology_26/index.html"
+    url = "http://books.toscrape.com/catalogue/category/books/young-adult_21/index.html"
     category = extract_book_per_category(url)
     write_data_books_in_csv(category['books'], category['title'])
