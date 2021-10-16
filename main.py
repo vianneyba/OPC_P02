@@ -24,6 +24,7 @@ def write_data_books_in_csv(data_dict, file_name= 'book'):
                 'price_excluding_tax': data_dict['price_excluding_tax'],
                 'number_available': data_dict['number_available'],
                 'category': data_dict['category'],
+                'review_rating': data_dict['review_rating'],
             })
     except IOError:
         print('I/O error')
@@ -65,8 +66,12 @@ def extract_category(soup):
 
     return lis[2].text.strip()
 
+# Récupération de la note
+def extract_review_rating(soup):
+    return soup.find(class_='star-rating')['class'][1]
+
 if __name__ == '__main__':
-    url = "http://books.toscrape.com/catalogue/its-only-the-himalayas_981/index.html"
+    url = "http://books.toscrape.com/catalogue/the-lucifer-effect-understanding-how-good-people-turn-evil_758/index.html"
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
 
@@ -76,5 +81,6 @@ if __name__ == '__main__':
     data_dict['product_description'] = extract_product_description(soup)
     data_dict.update(extract_upc_price_availability(soup))
     data_dict['category'] = extract_category(soup)
+    data_dict['review_rating'] = extract_review_rating(soup)
 
     write_data_books_in_csv(data_dict)
