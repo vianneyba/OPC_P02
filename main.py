@@ -3,7 +3,10 @@ import requests
 import csv
 import re
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
+def create_url(url_base, url_relative):
+    return urljoin(url_base, url_relative)
 
 # créé le dossier csv_files et écrit dans un fichier csv les données du dictionnaire
 def write_data_books_in_csv(data_dict, file_name= 'book'):
@@ -25,6 +28,7 @@ def write_data_books_in_csv(data_dict, file_name= 'book'):
                 'number_available': data_dict['number_available'],
                 'category': data_dict['category'],
                 'review_rating': data_dict['review_rating'],
+                'image_url': data_dict['image_url']
             })
     except IOError:
         print('I/O error')
@@ -70,6 +74,12 @@ def extract_category(soup):
 def extract_review_rating(soup):
     return soup.find(class_='star-rating')['class'][1]
 
+# Récupération de l'url relative de l'image
+def extract_image_url(soup):
+    product_gallery = soup.find("div", {"id": "product_gallery"})
+
+    return product_gallery.find('img')['src']
+
 if __name__ == '__main__':
     url = "http://books.toscrape.com/catalogue/the-lucifer-effect-understanding-how-good-people-turn-evil_758/index.html"
     page = requests.get(url)
@@ -82,5 +92,6 @@ if __name__ == '__main__':
     data_dict.update(extract_upc_price_availability(soup))
     data_dict['category'] = extract_category(soup)
     data_dict['review_rating'] = extract_review_rating(soup)
+    data_dict['image_url'] = create_url(url, extract_image_url(soup))
 
     write_data_books_in_csv(data_dict)
