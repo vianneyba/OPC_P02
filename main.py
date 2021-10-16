@@ -23,6 +23,7 @@ def write_data_books_in_csv(data_dict, file_name= 'book'):
                 'price_including_tax': data_dict['price_including_tax'],
                 'price_excluding_tax': data_dict['price_excluding_tax'],
                 'number_available': data_dict['number_available'],
+                'category': data_dict['category'],
             })
     except IOError:
         print('I/O error')
@@ -57,6 +58,13 @@ def extract_upc_price_availability(soup):
 
     return result
 
+# Récupération de la catégorie
+def extract_category(soup):
+    ul = soup.find('ul', class_='breadcrumb')
+    lis = ul.findAll('li')
+
+    return lis[2].text.strip()
+
 if __name__ == '__main__':
     url = "http://books.toscrape.com/catalogue/its-only-the-himalayas_981/index.html"
     page = requests.get(url)
@@ -67,4 +75,6 @@ if __name__ == '__main__':
     data_dict['title'] = extract_title(soup)
     data_dict['product_description'] = extract_product_description(soup)
     data_dict.update(extract_upc_price_availability(soup))
+    data_dict['category'] = extract_category(soup)
+
     write_data_books_in_csv(data_dict)
