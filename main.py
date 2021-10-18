@@ -2,9 +2,9 @@ import os.path
 import requests
 import csv
 import re
+import sys
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
-
 
 def create_url(url_base, url_relative):
     return urljoin(url_base, url_relative)
@@ -46,6 +46,19 @@ def extract_book_per_category(url):
         while__category_page(result)
 
     return result
+
+def extract_category_url(url):
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, "html.parser")
+
+    url_categories = []
+    nav_list = soup.find('ul', class_='nav nav-list')
+    lis = nav_list.find_all('li')
+    for li in lis:
+        url_categories.append(create_url(url, li.find('a')['href']))
+    
+    url_categories.pop(0)
+    return url_categories
 
 # Récupération de la description grâce aux Métadonnées
 def extract_product_description(soup):
@@ -107,7 +120,8 @@ def create_info_book(url):
     return result
 
 # créé le dossier csv_files et écrit dans un fichier csv les données du dictionnaire
-def write_data_books_in_csv(data_list, file_name= 'book'):
+def write_data_books_in_csv(data_list, file_name= 'book', pagination= None):
+    print('{}/{} Catégorie : {} ({} livre(s))'.format(pagination['current_category'], pagination['nb_category'], file_name, pagination['nb_book']))
     try:
         if not os.path.exists('csv_files'):
             os.makedirs('csv_files')
@@ -116,8 +130,10 @@ def write_data_books_in_csv(data_list, file_name= 'book'):
             'category', 'review_rating', 'image_url']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
+            i = 1
             for url in data_list:
                 data_dict = create_info_book(url)
+                print('\t--> ({}/{}){}'.format(i, pagination['nb_book'], data_dict['title']))
                 writer.writerow({
                     'product_page_url': data_dict['product_page_url'],
                     'title': data_dict['title'],
@@ -130,10 +146,20 @@ def write_data_books_in_csv(data_list, file_name= 'book'):
                     'review_rating': data_dict['review_rating'],
                     'image_url': data_dict['image_url']
                 })
+                i += 1
     except IOError:
         print('I/O error')
 
 if __name__ == '__main__':
-    url = "http://books.toscrape.com/catalogue/category/books/young-adult_21/index.html"
-    category = extract_book_per_category(url)
-    write_data_books_in_csv(category['books'], category['title'])
+
+    bts_url = 'http://books.toscrape.com'
+
+    category_url = extract_category_url(bts_url)
+    pagination = {'nb_category': len(category_url)}
+    i= 1
+    for url in category_url:
+        category = extract_book_per_category(url)
+        pagination['nb_book'] = len(category['books'])
+        pagination['current_category'] = i
+        write_data_books_in_csv(category['books'], category['title'], pagination= pagination)
+        i+=1
