@@ -173,11 +173,12 @@ if __name__ == '__main__':
         with_image = False
         del sys.argv[sys.argv.index('-ni')]
 
-    if 'list' in sys.argv or '-l' in sys.argv:
-        if '-l' in sys.argv:
-            del sys.argv[sys.argv.index('-l')]
-        elif 'list' in sys.argv:
-            del sys.argv[sys.argv.index('list')]
+    if 'help' in sys.argv or '-h' in sys.argv:
+        print('usage : main.py [\'-l\'] [\'-ni\'] [<category>]')
+        print('\tcategory: extraction d\'une seule categorie')
+        print('\t-l, --list: visualisation des categories')
+        print('\t-ni: extraction sans image')
+    elif '--list' in sys.argv or '-l' in sys.argv:
         print('\t--> Liste des catégories <--')
         for c in category_url:
             print('{}'.format(c['title']))
