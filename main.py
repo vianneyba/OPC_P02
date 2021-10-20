@@ -4,7 +4,7 @@ import csv
 import re
 import sys
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 def create_url(url_base, url_relative):
     return urljoin(url_base, url_relative)
@@ -14,7 +14,7 @@ def extract_title(soup):
     return soup.find('h1').text.strip()
 
 # Ajoute les livres tant qu'il y a des pages dans la catégorie
-def while__category_page(dict_page):
+def while_category_page(dict_page):
     page = requests.get(dict_page['url'])
     soup = BeautifulSoup(page.content, "html.parser")
 
@@ -22,7 +22,7 @@ def while__category_page(dict_page):
     ol = soup.find('ol')
     hthrees = ol.find_all('h3')
     for hthree in hthrees:
-        dict_page['books'].append(create_url(url, hthree.find('a')['href']))
+        dict_page['books'].append(create_url(dict_page['url'], hthree.find('a')['href']))
 
     next = soup.find('ul', class_ = 'pager')
     if next is not None:
@@ -43,7 +43,7 @@ def extract_book_per_category(url):
         }
     
     while result['next']:
-        while__category_page(result)
+        while_category_page(result)
 
     return result
 
@@ -54,10 +54,14 @@ def extract_category_url(url):
     url_categories = []
     nav_list = soup.find('ul', class_='nav nav-list')
     lis = nav_list.find_all('li')
+    lis.pop(0)
     for li in lis:
-        url_categories.append(create_url(url, li.find('a')['href']))
+        dic_category = {
+            'title': li.text.strip(),
+            'url': create_url(url, li.find('a')['href'])
+        } 
+        url_categories.append(dic_category)
     
-    url_categories.pop(0)
     return url_categories
 
 # Récupération de la description grâce aux Métadonnées
@@ -119,12 +123,20 @@ def create_info_book(url):
 
     return result
 
+def extract_image(image_url):
+    img_data = requests.get(image_url).content
+    pr = urlparse(image_url)
+    with open('images/'+os.path.basename(pr.path), 'wb') as handler:
+        handler.write(img_data)
+
 # créé le dossier csv_files et écrit dans un fichier csv les données du dictionnaire
-def write_data_books_in_csv(data_list, file_name= 'book', pagination= None):
+def write_data_books_in_csv(data_list, file_name= 'book', pagination= None, with_image= True):
     print('{}/{} Catégorie : {} ({} livre(s))'.format(pagination['current_category'], pagination['nb_category'], file_name, pagination['nb_book']))
     try:
         if not os.path.exists('csv_files'):
             os.makedirs('csv_files')
+        if not os.path.exists('images'):
+            os.makedirs('images')
         with open('csv_files/{}.csv'.format(file_name), 'w', newline='') as csvfile:
             fieldnames = ['product_page_url', 'universal_product_code', 'title', 'price_including_tax', 'price_excluding_tax', 'number_available', 'product_description',
             'category', 'review_rating', 'image_url']
@@ -146,20 +158,20 @@ def write_data_books_in_csv(data_list, file_name= 'book', pagination= None):
                     'review_rating': data_dict['review_rating'],
                     'image_url': data_dict['image_url']
                 })
+                if with_image:
+                    extract_image(data_dict['image_url'])
                 i += 1
     except IOError:
         print('I/O error')
 
 if __name__ == '__main__':
-
     bts_url = 'http://books.toscrape.com'
-
     category_url = extract_category_url(bts_url)
-    pagination = {'nb_category': len(category_url)}
     i= 1
-    for url in category_url:
-        category = extract_book_per_category(url)
-        pagination['nb_book'] = len(category['books'])
+    pagination = {'nb_category': len(category_url)}
+    for cat in category_url:
         pagination['current_category'] = i
+        category = extract_book_per_category(cat['url'])
+        pagination['nb_book'] = len(category['books'])
         write_data_books_in_csv(category['books'], category['title'], pagination= pagination)
         i+=1
