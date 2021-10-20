@@ -166,12 +166,33 @@ def write_data_books_in_csv(data_list, file_name= 'book', pagination= None, with
 
 if __name__ == '__main__':
     bts_url = 'http://books.toscrape.com'
-    category_url = extract_category_url(bts_url)
     i= 1
-    pagination = {'nb_category': len(category_url)}
-    for cat in category_url:
-        pagination['current_category'] = i
-        category = extract_book_per_category(cat['url'])
-        pagination['nb_book'] = len(category['books'])
-        write_data_books_in_csv(category['books'], category['title'], pagination= pagination)
-        i+=1
+    with_image = True
+    category_url = extract_category_url(bts_url)
+    if '-ni' in sys.argv:
+        with_image = False
+        del sys.argv[sys.argv.index('-ni')]
+
+    if 'list' in sys.argv or '-l' in sys.argv:
+        if '-l' in sys.argv:
+            del sys.argv[sys.argv.index('-l')]
+        elif 'list' in sys.argv:
+            del sys.argv[sys.argv.index('list')]
+        print('\t--> Liste des catégories <--')
+        for c in category_url:
+            print('{}'.format(c['title']))
+    else:
+        if len(sys.argv) == 2:
+            try:
+                cat = next(item for item in category_url if item['title'].lower() == sys.argv[1].lower())
+                category_url.clear()
+                category_url = [cat]
+            except:
+                print('Catégorie inexistante')
+        for cat in category_url:
+            pagination = {'nb_category': len(category_url)}
+            pagination['current_category'] = i
+            category = extract_book_per_category(cat['url'])
+            pagination['nb_book'] = len(category['books'])
+            write_data_books_in_csv(category['books'], category['title'], pagination= pagination, with_image=with_image)
+            i+=1
