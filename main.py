@@ -272,6 +272,16 @@ if __name__ == '__main__':
         print('\t--> Liste des catégories <--')
         for c in category_url:
             print('{}'.format(c['title']))
+    elif '-r' in sys.argv:
+        try:
+            if os.path.exists('csv_files'):
+                shutil.rmtree('csv_files')
+            if os.path.exists('images'):
+                shutil.rmtree('images')
+        except OSError as e:
+            print(e)
+        else:
+            print('Dossier \'csv_files\' et \'images\' effacés')
     else:
         if len(sys.argv) == 2:
             try:
