@@ -282,6 +282,31 @@ if __name__ == '__main__':
             print(e)
         else:
             print('Dossier \'csv_files\' et \'images\' effacés')
+    elif '-url' in sys.argv:
+        if len(sys.argv) > 2:
+            url = sys.argv[2]
+        else:
+            print('manque url')
+            exit()
+        try:
+            cat = next(item for item in category_url if item['url'].lower() == url)
+            category_url.clear()
+            category_url = [cat]
+            category = extract_book_per_category(cat['url'])
+            pagination = {
+                            'current_category': '1',
+                            'nb_category': cat['title'],
+                            'nb_book': len(category['books'])
+                        }
+            write_data_books_in_csv(category['books'], category['title'], pagination= pagination, with_image=with_image)
+        except:
+            data_dict = create_info_book(url)
+            pagination = {
+                            'current_category': '1',
+                            'nb_category': '1',
+                            'nb_book': '1'
+                        }
+            write_data_books_in_csv([url], file_name= data_dict['category'], pagination= pagination)
     else:
         if len(sys.argv) == 2:
             try:
@@ -290,6 +315,7 @@ if __name__ == '__main__':
                 category_url = [cat]
             except:
                 print('Catégorie inexistante')
+                exit()
         for cat in category_url:
             pagination = {'nb_category': len(category_url)}
             pagination['current_category'] = i
