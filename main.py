@@ -5,6 +5,7 @@ import re
 import sys
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
+import shutil
 
 def extract_soup(link):
     page = requests.get(link)
@@ -135,9 +136,11 @@ def extract_upc_price_availability(soup):
         if th.text == 'UPC':
             result['universal_product_code'] = tr.find('td').text.strip()
         elif th.text == 'Price (excl. tax)':
-            result['price_excluding_tax'] = tr.find('td').text.strip()
+            price = tr.find('td').text.strip()
+            result['price_excluding_tax'] = re.search('([0-9.,]{1,})', price).group(0)
         elif th.text == 'Price (incl. tax)':
-            result['price_including_tax'] = tr.find('td').text.strip()
+            price = tr.find('td').text.strip()
+            result['price_including_tax'] = re.search('([0-9.,]{1,})', price).group(0)
         elif th.text == 'Availability':
             quantities = re.search('([0-9]{1,})', tr.find('td').text.strip())
             result['number_available'] = quantities[0]
