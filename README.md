@@ -13,11 +13,18 @@ installer les dependance: *pip install -r requirements.txt*
 ## Lancement du script
 
 pour la récupération de tous les livres de chaque catégories (avec les couvertures):
+
 *python3 main.py*
+
 sans la récupération des couvertures:
+
 *python3 main.py -ni*
+
 pour lister les catégories:
+
 *python3 main.py -l*
+
 récupération d'une seule catégorie:
+
 *python3 main.py "Sports and Games"*
 
