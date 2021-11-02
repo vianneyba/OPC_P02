@@ -9,12 +9,28 @@ from urllib.parse import urljoin, urlparse
 def create_url(url_base, url_relative):
     return urljoin(url_base, url_relative)
 
-# récupération du titre du livre
 def extract_title(soup):
+    """ Récupération du titre du livre
+        Parameters:
+            soup: bs4.BeautifulSoup
+        Returns:
+            String
+    """
     return soup.find('h1').text.strip()
 
-# Ajoute les livres tant qu'il y a des pages dans la catégorie
 def while_category_page(dict_page):
+    """ Ajoute les livres tant qu'il y a des pages dans la catégorie et ajoute le 'title' dans le dictionnaire en entrée.
+        Parameters:
+            dict: 
+                {   
+                    'url': 'http://books.toscrape.com/catalogue/category/books/travel_2/index.html',
+                    'title': '',
+                    'books': [],
+                    'next': True
+                }
+        Returns:
+
+    """
     page = requests.get(dict_page['url'])
     soup = BeautifulSoup(page.content, "html.parser")
 
@@ -33,8 +49,13 @@ def while_category_page(dict_page):
     else:
         dict_page['url']= create_url(dict_page['url'], next.find('a')['href'])
 
-# Récupération des livres d'une catégorie
 def extract_book_per_category(url):
+    """ Récupération des livres d'une catégorie
+        Parameters:
+            str
+        Returns:
+            dict
+    """
     result = {
         'url': url,
         'title': '',
@@ -44,12 +65,27 @@ def extract_book_per_category(url):
     
     while result['next']:
         while_category_page(result)
-
     return result
 
 def extract_category_url(url):
+    """ Récupération d'une des catégories du site.
+        Parameters:
+            str
+        Returns:
+            list:
+                [
+                    {
+                        'title': 'Travel',
+                        'url': 'http://books.toscrape.com/catalogue/category/books/travel_2/index.html'
+                    },
+                    {
+                        'title': 'Mystery',
+                        'url': 'http://books.toscrape.com/catalogue/category/books/mystery_3/index.html'
+                    }
+                ]
+    """
     page = requests.get(url)
-    soup = BeautifulSoup(page.content, "html.parser")
+    soup = BeautifulSoup(page.content, 'html.parser')
 
     url_categories = []
     nav_list = soup.find('ul', class_='nav nav-list')
@@ -61,18 +97,34 @@ def extract_category_url(url):
             'url': create_url(url, li.find('a')['href'])
         } 
         url_categories.append(dic_category)
-    
     return url_categories
 
-# Récupération de la description grâce aux Métadonnées
 def extract_product_description(soup):
+    """ Récupération de la description grâce aux Métadonnées.
+        Parameters:
+            soup: bs4.BeautifulSoup
+        Returns:
+            str
+    """
     product_description = soup.find('meta', {'name': 'description'})
     product_description = product_description['content'].strip()
 
     return product_description
 
-# Récupération upc, des prix, et de la disponibilité
 def extract_upc_price_availability(soup):
+    """ Récupération upc, des prix, et de la disponibilité.
+        Parameters:
+            soup: bs4.BeautifulSoup
+        Returns:
+            dict
+                {
+                    'universal_product_code': '3bc89353f7e3a3cc',
+                    'price_excluding_tax': '£54.21',
+                    'price_including_tax': '£54.21',
+                    'number_available':
+                    '14'
+                }
+    """
     result = {}
     product_table_info = soup.find('table', class_="table table-striped")
     trs = product_table_info.find_all('tr')
@@ -87,30 +139,60 @@ def extract_upc_price_availability(soup):
         elif th.text == 'Availability':
             quantities = re.search('([0-9]{1,})', tr.find('td').text.strip())
             result['number_available'] = quantities[0]
-
     return result
 
-# Récupération de la catégorie
 def extract_category(soup):
+    """ Récupération de la catégorie
+        Parameters:
+            soup: bs4.BeautifulSoup
+        Returns:
+            str
+    """
     ul = soup.find('ul', class_='breadcrumb')
     lis = ul.findAll('li')
-
     return lis[2].text.strip()
 
-# Récupération de la note
 def extract_review_rating(soup):
+    """ Récupération de la note
+        Parameters:
+            soup: bs4.BeautifulSoup
+        Returns:
+            str
+    """
     return soup.find(class_='star-rating')['class'][1]
 
-# Récupération de l'url relative de l'image
 def extract_image_url(soup):
-    product_gallery = soup.find("div", {"id": "product_gallery"})
+    """ Récupération de l'url relative de l'image
+        Parameters:
+            soup: bs4.BeautifulSoup
+        Returns:
+            str
+    """
+    product_gallery = soup.find('div', {'id': 'product_gallery'})
 
     return product_gallery.find('img')['src']
 
-# Récupération des info du livre
 def create_info_book(url):
+    """ Récupération des informations du livre
+        Parameters:
+            url: str
+        Returns:
+            dict:
+                {
+                    'product_page_url': 'http://books.toscrape.com/catalogue/the-great-railway-bazaar_446/index.html',
+                    'title': 'The Great Railway Bazaar',
+                    'product_description': "First publishedtial ...more",
+                    'universal_product_code': '48736df57e7bec9f',
+                    'price_excluding_tax': '£30.54',
+                    'price_including_tax': '£30.54',
+                    'number_available': '6',
+                    'category': 'Travel',
+                    'review_rating': 'One',
+                    'image_url': 'http://books.toscrape.com/media/cache/d5/82/d582f6b0261c2842330e893962276295.jpg'
+                }
+    """
     page = requests.get(url)
-    soup = BeautifulSoup(page.content, "html.parser")
+    soup = BeautifulSoup(page.content, 'html.parser')
 
     result = {}
     result['product_page_url'] = url
@@ -120,17 +202,21 @@ def create_info_book(url):
     result['category'] = extract_category(soup)
     result['review_rating'] = extract_review_rating(soup)
     result['image_url'] = create_url(url, extract_image_url(soup))
-
     return result
 
 def extract_image(image_url):
+    """ Enregistrement local du fichier image
+        Parameters:
+            image_url: str
+    """
     img_data = requests.get(image_url).content
     pr = urlparse(image_url)
     with open('images/'+os.path.basename(pr.path), 'wb') as handler:
         handler.write(img_data)
 
-# créé le dossier csv_files et écrit dans un fichier csv les données du dictionnaire
 def write_data_books_in_csv(data_list, file_name= 'book', pagination= None, with_image= True):
+    """ Créé le dossier csv_files, images et écrit dans un fichier csv les données du dictionnaire
+    """
     print('{}/{} Catégorie : {} ({} livre(s))'.format(pagination['current_category'], pagination['nb_category'], file_name, pagination['nb_book']))
     try:
         if not os.path.exists('csv_files'):
