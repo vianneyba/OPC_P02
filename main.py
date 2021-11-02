@@ -6,6 +6,10 @@ import sys
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 
+def extract_soup(link):
+    page = requests.get(link)
+    return BeautifulSoup(page.content, "html.parser")
+
 def create_url(url_base, url_relative):
     return urljoin(url_base, url_relative)
 
@@ -31,8 +35,7 @@ def while_category_page(dict_page):
         Returns:
 
     """
-    page = requests.get(dict_page['url'])
-    soup = BeautifulSoup(page.content, "html.parser")
+    soup= extract_soup(dict_page['url'])
 
     dict_page['title'] = extract_title(soup)
     ol = soup.find('ol')
@@ -84,9 +87,8 @@ def extract_category_url(url):
                     }
                 ]
     """
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, 'html.parser')
-
+    soup= extract_soup(url)
+    
     url_categories = []
     nav_list = soup.find('ul', class_='nav nav-list')
     lis = nav_list.find_all('li')
@@ -125,7 +127,7 @@ def extract_upc_price_availability(soup):
                     '14'
                 }
     """
-    result = {}
+    result = {'number_available': 0}
     product_table_info = soup.find('table', class_="table table-striped")
     trs = product_table_info.find_all('tr')
     for tr in trs:
@@ -191,8 +193,7 @@ def create_info_book(url):
                     'image_url': 'http://books.toscrape.com/media/cache/d5/82/d582f6b0261c2842330e893962276295.jpg'
                 }
     """
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, 'html.parser')
+    soup= extract_soup(url)
 
     result = {}
     result['product_page_url'] = url
