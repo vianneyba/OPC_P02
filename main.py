@@ -264,15 +264,17 @@ if __name__ == '__main__':
         del sys.argv[sys.argv.index('-ni')]
 
     if 'help' in sys.argv or '-h' in sys.argv:
-        print('usage : main.py [\'-l\'] [\'-ni\'] [<category>]')
+        print('usage : main.py [\'-l\'] [\'-ni\'] [<category>-<url>]')
         print('\tcategory: extraction d\'une seule categorie')
+        print('\t--url: extraction d\'un livre ou d\'une categorie')
         print('\t-l, --list: visualisation des categories')
         print('\t-ni: extraction sans image')
+        print('\t--reset: efface les fichers csv_files et images')
     elif '--list' in sys.argv or '-l' in sys.argv:
         print('\t--> Liste des catégories <--')
         for c in category_url:
             print('{}'.format(c['title']))
-    elif '-r' in sys.argv:
+    elif '--reset' in sys.argv:
         try:
             if os.path.exists('csv_files'):
                 shutil.rmtree('csv_files')
@@ -306,7 +308,7 @@ if __name__ == '__main__':
                             'nb_category': '1',
                             'nb_book': '1'
                         }
-            write_data_books_in_csv([url], file_name= data_dict['category'], pagination= pagination)
+            write_data_books_in_csv([url], file_name= data_dict['category'], pagination= pagination, with_image=with_image)
     else:
         if len(sys.argv) == 2:
             try:
